@@ -4,10 +4,11 @@ import { Board, JobCard as JobCardType } from "../types";
 
 interface KanbanBoardProps {
 	boards: Board[];
-	boardResults: Record<string, string>;
+	boardResults: Record<string, { backgroundColor: string; message: string }>;
 	onDrop: (jobCard: JobCardType, boardIndex: number) => void;
 	onExecuteJob: (boardIndex: number, jobIndex: number) => void;
 	onExecuteAllJobs: (boardIndex: number) => void;
+	onJobDoubleClick: (job: JobCardType) => void;
 }
 
 const KanbanBoard: React.FC<KanbanBoardProps> = ({
@@ -16,6 +17,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
 	onDrop,
 	onExecuteJob,
 	onExecuteAllJobs,
+	onJobDoubleClick,
 }) => {
 	const handleDragOver = (e: React.DragEvent) => {
 		e.preventDefault();
@@ -24,7 +26,6 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
 	const handleDrop = (e: React.DragEvent, boardIndex: number) => {
 		e.preventDefault();
 		const jsonData = e.dataTransfer.getData("application/json");
-		console.log("Received data:", jsonData); // デバッグ用ログ
 		if (jsonData) {
 			try {
 				const jobCard = JSON.parse(jsonData);
@@ -32,34 +33,44 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
 			} catch (error) {
 				console.error("Error parsing job card data:", error);
 			}
-		} else {
-			console.error("No data received on drop");
 		}
 	};
 
 	return (
-		<div className="flex space-x-4">
+		<div className="flex space-x-4 pb-4">
 			{boards.map((board, boardIndex) => (
 				<div
 					key={boardIndex}
-					className="w-64 bg-gray-100 p-4 rounded"
+					className="w-80 bg-white p-4 rounded-lg shadow-md flex flex-col"
 					onDragOver={handleDragOver}
 					onDrop={(e) => handleDrop(e, boardIndex)}
 				>
-					<h3 className="text-lg font-semibold mb-2">{board.name}</h3>
-					{board.jobs.map((job, jobIndex) => (
-						<JobCard
-							key={jobIndex}
-							job={job}
-							onClick={() => onExecuteJob(boardIndex, jobIndex)}
-							className={
-								boardResults[`${boardIndex}-${jobIndex}`] || ""
-							}
-						/>
-					))}
+					<h3 className="text-lg font-semibold mb-4 pb-2 border-b">
+						{board.name}
+					</h3>
+					<div className="flex-grow overflow-y-auto">
+						{board.jobs.map((job, jobIndex) => (
+							<JobCard
+								key={jobIndex}
+								job={job}
+								onExecute={() =>
+									onExecuteJob(boardIndex, jobIndex)
+								}
+								onDoubleClick={() => onJobDoubleClick(job)}
+								className={
+									boardResults[`${boardIndex}-${jobIndex}`]
+										?.backgroundColor || ""
+								}
+								message={
+									boardResults[`${boardIndex}-${jobIndex}`]
+										?.message
+								}
+							/>
+						))}
+					</div>
 					<button
 						onClick={() => onExecuteAllJobs(boardIndex)}
-						className="mt-4 w-full py-2 bg-blue-500 text-white rounded"
+						className="mt-4 w-full py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
 					>
 						Execute All Jobs
 					</button>
